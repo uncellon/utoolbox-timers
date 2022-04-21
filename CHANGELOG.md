@@ -10,3 +10,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.1] - 2022-04-09
 ### Added
 - Sources :)
+
+[0.0.1]: https://github.com/uncellon/utoolbox-timers/releases/tag/v0.0.1
