@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(UTTimers VERSION 2.1.3)
+project(UTTimers VERSION 0.0.1)
 
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_TESTS "Build tests" ON)

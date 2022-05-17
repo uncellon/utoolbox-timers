@@ -4,10 +4,10 @@
 
 class A : public UT::Object {
 public:
-    A(UT::EventLoop *eventLoop) : UT::Object(eventLoop) { }
+    A(UT::EventLoop* eventLoop) : UT::Object(eventLoop) { }
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     UT::Timer tmr1, tmr2, tmr3;
     UT::EventLoop mainLoop;
     A a(&mainLoop);

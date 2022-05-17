@@ -1,29 +1,12 @@
 #include "ut/timers/timer.h"
 
-#include <fcntl.h>
 #include <iostream>
 #include <unistd.h>
-#include <signal.h>
-#include <execinfo.h>
-#include <condition_variable>
 
 bool threadsRunning = true;
 unsigned int triggerCount = 0;
 unsigned int startCount = 0;
 unsigned int stopCount = 0;
-
-void sigsegvHandler(int signum) {
-    int nptrs, fd;
-    void *buffer[1024];
-
-    nptrs = backtrace(buffer, 1024);
-    fd = open("cascadetimercall_backtrace.txt", O_CREAT | O_WRONLY | O_TRUNC, 0665);
-    backtrace_symbols_fd(buffer, nptrs, fd);
-    close(fd);
-
-    signal(signum, SIG_DFL);
-    exit(3);
-}
 
 void timerTimeoutHandler() {
     ++triggerCount;
@@ -34,9 +17,7 @@ public:
     A(UT::EventLoop *eventLoop) : UT::Object(eventLoop) { }
 };
 
-int main(int argc, char *argv[]) {
-    signal(SIGSEGV, sigsegvHandler);
-
+int main(int argc, char* argv[]) {
     UT::EventLoop mainLoop;
     A a(&mainLoop);
 

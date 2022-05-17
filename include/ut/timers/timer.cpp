@@ -1,19 +1,19 @@
 /******************************************************************************
  * 
- * Copyright (C) 2021 Dmitry Plastinin
+ * Copyright (C) 2022 Dmitry Plastinin
  * Contact: uncellon@yandex.ru, uncellon@gmail.com, uncellon@mail.ru
  * 
  * This file is part of the UToolbox Timers library.
  * 
- * UToolbox Timers is free software: you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as pubblished by the
- * Free Software Foundation, either version 3 of the License, or (at your 
+ * UToolbox Timers is free software: you can redistribute it and/or modify it 
+ * under the terms of the GNU Lesser General Public License as pubblished by 
+ * the Free Software Foundation, either version 3 of the License, or (at your 
  * option) any later version.
  * 
- * UToolbox Timers is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or 
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser Public License for more
- * details
+ * UToolbox Timers is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser Public License for 
+ * more details
  * 
  * You should have received a copy of the GNU Lesset General Public License
  * along with UToolbox Timers. If not, see <https://www.gnu.org/licenses/>.
@@ -118,7 +118,7 @@ void Timer::stop() {
     m_started = false;
     deleteTimer();
     m_timerid = timer_t();
-    m_index = -1;
+    m_id = -1;
 }
 
 /******************************************************************************
@@ -176,14 +176,14 @@ void Timer::dispatcherLoop() {
 
 inline void Timer::createTimer(unsigned int msec) {
     // Reserve signal for this object
-    m_index = reserveId(this);
+    m_id = reserveId(this);
 
     // Create sigevent for timer
     struct sigevent sev;
     sev.sigev_notify = SIGEV_SIGNAL;
     sev.sigev_signo = TIMER_SIGNAL;
     sev.sigev_value.sival_ptr = &m_timerid;
-    sev.sigev_value.sival_int = m_index;
+    sev.sigev_value.sival_int = m_id;
     sev._sigev_un._sigev_thread._attribute = nullptr;
 
     if (timer_create(CLOCK_MONOTONIC, &sev, &m_timerid) == -1) {
@@ -194,7 +194,7 @@ inline void Timer::createTimer(unsigned int msec) {
 
 inline void Timer::deleteTimer() {
     timer_delete(m_timerid);
-    m_timerInstances[m_index] = nullptr;
+    m_timerInstances[m_id] = nullptr;
 }
 
 inline void Timer::setTime(unsigned int msec) {
