@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#define TIMER_SIGNAL SIGRTMIN
+#define TIMER_SIGNAL SIGRTMIN + 1
 
 namespace UT {
 
