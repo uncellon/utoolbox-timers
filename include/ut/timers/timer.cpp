@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#define TIMER_SIGNAL SIGRTMIN + 1
+#define UT_TIMER_SIGNAL SIGRTMIN + 1
 
 namespace UT {
 
@@ -45,8 +45,8 @@ unsigned int Timer::m_counter = 0;
  *****************************************************************************/
 
 static void timerSignalHandler(int sig, siginfo_t* info, void* ucontext) {
-    sigaddset(&static_cast<ucontext_t*>(ucontext)->uc_sigmask, TIMER_SIGNAL);
-    kill(getpid(), TIMER_SIGNAL);
+    sigaddset(&static_cast<ucontext_t*>(ucontext)->uc_sigmask, UT_TIMER_SIGNAL);    
+    sigqueue(getpid(), UT_TIMER_SIGNAL, info->_sifields._timer.si_sigval);
 }
 
 /******************************************************************************
@@ -64,14 +64,14 @@ Timer::Timer() {
     
     sigset_t sigset;
     sigemptyset(&sigset);
-    sigaddset(&sigset, TIMER_SIGNAL);
+    sigaddset(&sigset, UT_TIMER_SIGNAL);
     sigprocmask(SIG_BLOCK, &sigset, nullptr);
 
     struct sigaction sa;
     sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sa.sa_sigaction = timerSignalHandler;
-    sigaction(TIMER_SIGNAL, &sa, nullptr);
-    kill(getpid(), TIMER_SIGNAL);
+    sigaction(UT_TIMER_SIGNAL, &sa, nullptr);
+    raise(UT_TIMER_SIGNAL);
 
     m_dispatcherRunning = true;
     m_dispatcherThread = new std::thread(&Timer::dispatcherLoop);
@@ -87,7 +87,7 @@ Timer::~Timer() {
     }
 
     m_dispatcherRunning = false;
-    sigqueue(getpid(), TIMER_SIGNAL, sigval());
+    sigqueue(getpid(), UT_TIMER_SIGNAL, sigval());
     m_dispatcherThread->join();
     delete m_dispatcherThread;
     m_dispatcherThread = nullptr;
@@ -144,14 +144,14 @@ void Timer::dispatcherLoop() {
 
     sigset_t sigset;
     sigemptyset(&sigset);
-    sigaddset(&sigset, TIMER_SIGNAL);
+    sigaddset(&sigset, UT_TIMER_SIGNAL);
 
     siginfo_t siginfo;
 
     while (m_dispatcherRunning) {
         sigwaitinfo(&sigset, &siginfo);
         
-        if (siginfo.si_code != SI_TIMER) {
+        if (!siginfo._sifields._timer.si_sigval.sival_ptr) {
             continue;
         }
 
@@ -181,7 +181,7 @@ inline void Timer::createTimer(unsigned int msec) {
     // Create sigevent for timer
     struct sigevent sev;
     sev.sigev_notify = SIGEV_SIGNAL;
-    sev.sigev_signo = TIMER_SIGNAL;
+    sev.sigev_signo = UT_TIMER_SIGNAL;
     sev.sigev_value.sival_ptr = &m_timerid;
     sev.sigev_value.sival_int = m_id;
     sev._sigev_un._sigev_thread._attribute = nullptr;
