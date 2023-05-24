@@ -1,6 +1,6 @@
 /******************************************************************************
  * 
- * Copyright (C) 2022 Dmitry Plastinin
+ * Copyright (C) 2023 Dmitry Plastinin
  * Contact: uncellon@yandex.ru, uncellon@gmail.com, uncellon@mail.ru
  * 
  * This file is part of the UToolbox Timers library.
@@ -74,27 +74,28 @@ protected:
      * Members
      *************************************************************************/
 
-    static bool m_dispatcherRunning;
-    static std::mutex m_cdtorMutex;
-    static std::mutex m_timerMutex;
-    static std::thread* m_dispatcherThread;
-    static std::vector<Timer*> m_timerInstances;
-    static unsigned int m_counter;
+    static bool mDispatcherRunning;
+    static std::mutex mCdtorMutex;
+    static std::mutex mTimerMutex;
+    static std::thread* mDispatcherThread;
+    static std::vector<Timer*> mTimerInstances;
+    static unsigned int mCounter;
 
-    bool m_oneShot = false;
-    bool m_started = false;
-    int m_id = -1;
-    timer_t m_timerid = timer_t();
+    bool mOneShot = false;
+    bool mStarted = false;
+    int mId = -1;
+    timer_t mTimerid = timer_t();
+    
 }; // class Timer
 
 /******************************************************************************
  * Inline definition: Accessors / Mutators
  *****************************************************************************/
 
-inline bool Timer::started() const { return m_started; }
+inline bool Timer::started() const { return mStarted; }
 
-inline bool Timer::oneShot() const { return m_oneShot; }
-inline void Timer::setOneShot(bool value) { m_oneShot = value; }
+inline bool Timer::oneShot() const { return mOneShot; }
+inline void Timer::setOneShot(bool value) { mOneShot = value; }
 
 } // namespace Hlk
 

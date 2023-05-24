@@ -1,6 +1,6 @@
 /******************************************************************************
  * 
- * Copyright (C) 2022 Dmitry Plastinin
+ * Copyright (C) 2023 Dmitry Plastinin
  * Contact: uncellon@yandex.ru, uncellon@gmail.com, uncellon@mail.ru
  * 
  * This file is part of the UToolbox Timers library.
@@ -33,12 +33,12 @@ namespace UT {
  * Static initialization
  *****************************************************************************/
 
-bool Timer::m_dispatcherRunning = false;
-std::mutex Timer::m_cdtorMutex;
-std::mutex Timer::m_timerMutex;
-std::thread* Timer::m_dispatcherThread = nullptr;
-std::vector<Timer*> Timer::m_timerInstances;
-unsigned int Timer::m_counter = 0;
+bool Timer::mDispatcherRunning = false;
+std::mutex Timer::mCdtorMutex;
+std::mutex Timer::mTimerMutex;
+std::thread* Timer::mDispatcherThread = nullptr;
+std::vector<Timer*> Timer::mTimerInstances;
+unsigned int Timer::mCounter = 0;
 
 /******************************************************************************
  * Functions
@@ -54,13 +54,13 @@ static void timerSignalHandler(int sig, siginfo_t* info, void* ucontext) {
  *****************************************************************************/
 
 Timer::Timer() {
-    std::unique_lock lock(m_cdtorMutex);
+    std::unique_lock lock(mCdtorMutex);
 
-    if (++m_counter != 1) {
+    if (++mCounter != 1) {
         return;
     }
 
-    m_timerInstances.clear();
+    mTimerInstances.clear();
     
     sigset_t sigset;
     sigemptyset(&sigset);
@@ -73,26 +73,26 @@ Timer::Timer() {
     sigaction(UT_TIMER_SIGNAL, &sa, nullptr);
     raise(UT_TIMER_SIGNAL);
 
-    m_dispatcherRunning = true;
-    m_dispatcherThread = new std::thread(&Timer::dispatcherLoop);
+    mDispatcherRunning = true;
+    mDispatcherThread = new std::thread(&Timer::dispatcherLoop);
 }
 
 Timer::~Timer() {
     stop();
 
-    std::unique_lock lock(m_cdtorMutex);
+    std::unique_lock lock(mCdtorMutex);
 
-    if (--m_counter != 0) {
+    if (--mCounter != 0) {
         return;
     }
 
-    m_dispatcherRunning = false;
+    mDispatcherRunning = false;
     sigqueue(getpid(), UT_TIMER_SIGNAL, sigval());
-    m_dispatcherThread->join();
-    delete m_dispatcherThread;
-    m_dispatcherThread = nullptr;
+    mDispatcherThread->join();
+    delete mDispatcherThread;
+    mDispatcherThread = nullptr;
 
-    m_timerInstances.clear();
+    mTimerInstances.clear();
 }
 
 /******************************************************************************
@@ -100,25 +100,25 @@ Timer::~Timer() {
  *****************************************************************************/
 
 void Timer::start(unsigned int msec) {
-    std::unique_lock lock(m_timerMutex);
-    if (!m_started) {
-        m_started = true;
+    std::unique_lock lock(mTimerMutex);
+    if (!mStarted) {
+        mStarted = true;
         createTimer(msec);
     }
     setTime(msec);
 }
 
 void Timer::stop() {
-    std::unique_lock lock(m_timerMutex);
+    std::unique_lock lock(mTimerMutex);
 
-    if (!m_started) {
+    if (!mStarted) {
         return;
     }
 
-    m_started = false;
+    mStarted = false;
     deleteTimer();
-    m_timerid = timer_t();
-    m_id = -1;
+    mTimerid = timer_t();
+    mId = -1;
 }
 
 /******************************************************************************
@@ -126,16 +126,16 @@ void Timer::stop() {
  *****************************************************************************/
 
 inline int Timer::reserveId(Timer* timer) {
-    for (size_t i = 0; i < m_timerInstances.size(); ++i) {
-        if (m_timerInstances[i] != nullptr) {
+    for (size_t i = 0; i < mTimerInstances.size(); ++i) {
+        if (mTimerInstances[i] != nullptr) {
             continue;
         }
-        m_timerInstances[i] = timer;
+        mTimerInstances[i] = timer;
         return i;
     }
 
-    m_timerInstances.emplace_back(timer);
-    return m_timerInstances.size() - 1;
+    mTimerInstances.emplace_back(timer);
+    return mTimerInstances.size() - 1;
 }
 
 void Timer::dispatcherLoop() {
@@ -148,23 +148,23 @@ void Timer::dispatcherLoop() {
 
     siginfo_t siginfo;
 
-    while (m_dispatcherRunning) {
+    while (mDispatcherRunning) {
         sigwaitinfo(&sigset, &siginfo);
         
         if (!siginfo._sifields._timer.si_sigval.sival_ptr) {
             continue;
         }
 
-        std::unique_lock lock(m_timerMutex);
+        std::unique_lock lock(mTimerMutex);
 
         index = siginfo._sifields._timer.si_sigval.sival_int;
-        timerInstance = m_timerInstances[index];
-        if (!timerInstance || !timerInstance->m_started) {
+        timerInstance = mTimerInstances[index];
+        if (!timerInstance || !timerInstance->mStarted) {
             continue;
         }
         timerInstance->onTimeout();
         if (timerInstance->oneShot()) {
-            timerInstance->m_started = false;
+            timerInstance->mStarted = false;
             timerInstance->deleteTimer();
         }
     }
@@ -176,25 +176,25 @@ void Timer::dispatcherLoop() {
 
 inline void Timer::createTimer(unsigned int msec) {
     // Reserve signal for this object
-    m_id = reserveId(this);
+    mId = reserveId(this);
 
     // Create sigevent for timer
     struct sigevent sev;
     sev.sigev_notify = SIGEV_SIGNAL;
     sev.sigev_signo = UT_TIMER_SIGNAL;
-    sev.sigev_value.sival_ptr = &m_timerid;
-    sev.sigev_value.sival_int = m_id;
+    sev.sigev_value.sival_ptr = &mTimerid;
+    sev.sigev_value.sival_int = mId;
     sev._sigev_un._sigev_thread._attribute = nullptr;
 
-    if (timer_create(CLOCK_MONOTONIC, &sev, &m_timerid) == -1) {
+    if (timer_create(CLOCK_MONOTONIC, &sev, &mTimerid) == -1) {
         throw std::runtime_error("timer_create(...) failed, errno: "
             + std::to_string(errno));
     }
 }
 
 inline void Timer::deleteTimer() {
-    timer_delete(m_timerid);
-    m_timerInstances[m_id] = nullptr;
+    timer_delete(mTimerid);
+    mTimerInstances[mId] = nullptr;
 }
 
 inline void Timer::setTime(unsigned int msec) {
@@ -205,7 +205,7 @@ inline void Timer::setTime(unsigned int msec) {
     auto nsec = (msec % 1000) * 1000000;
     its.it_value.tv_sec = ts.tv_sec + (msec / 1000) + (ts.tv_nsec + nsec) / 1000000000;
     its.it_value.tv_nsec = (ts.tv_nsec + nsec) % 1000000000;
-    if (m_oneShot) {
+    if (mOneShot) {
         its.it_interval.tv_sec = 0;
         its.it_interval.tv_nsec = 0;
     } else {
@@ -213,7 +213,7 @@ inline void Timer::setTime(unsigned int msec) {
         its.it_interval.tv_nsec = (msec % 1000) * 1000000;
     }
 
-    if (timer_settime(m_timerid, TIMER_ABSTIME, &its, nullptr) == -1) {
+    if (timer_settime(mTimerid, TIMER_ABSTIME, &its, nullptr) == -1) {
         throw std::runtime_error("timerfd_settime(...) failed, errno: " 
             + std::to_string(errno));
     }

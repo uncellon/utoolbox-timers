@@ -1,3 +1,20 @@
+# Uncellon's Toolbox Timers
+
+![UToolbox Logo](logo.png)
+
+- [Description](#description)
+- [Examples](#examples)
+    - [Multiple timers](#multiple-timers)
+
+## Description
+
+This library provides intuitive implementation of timers based on events. Just set timer mode (how many times the timer should fire: one or many, sets by `setOneShot` method), add event handler to the `onTimeout` event, start timer by calling the `start()` method and stop it by calling `stop()` method if you need.
+
+## Examples
+
+### Multiple timers
+
+```cpp
 #include <iostream>
 #include <unistd.h>
 #include <ut/timers/timer.h>
@@ -20,3 +37,4 @@ int main(int argc, char* argv[]) {
 
     sleep(20);
 }
+```
