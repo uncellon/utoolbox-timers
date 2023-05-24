@@ -16,7 +16,7 @@ This library provides intuitive implementation of timers based on events. Just s
 
 - C++17 or higher
 - CMake >= 3.16
-- UToolbox Core >= 0.0.10
+- [UToolbox Core](https://github.com/uncellon/utoolbox-core) >= 0.0.10
 
 ## Examples
 
